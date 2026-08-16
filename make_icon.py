@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""生成 MaterialTodo.exe 的 app.ico 图标（纯 Pillow，无需 Qt）。"""
+"""生成 Easy-TodoList.exe 的 app.ico 图标（纯 Pillow，无需 Qt）。"""
 
 from PIL import Image, ImageDraw
 

@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -30,11 +33,36 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --name MaterialTodo --icon app.ico main.py
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name Easy-TodoList --icon app.ico main.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MaterialTodo-windows
-          path: dist/MaterialTodo.exe
+          name: Easy-TodoList-windows
+          path: dist/Easy-TodoList.exe
           if-no-files-found: error
+
+      # 仅在打 tag（v*）时：把 UpdateLog.md 中当前版本的说明同步到 Release Notes，并附带 exe
+      - name: Extract release notes from UpdateLog.md
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python - "$VERSION" <<'PY'
+          import re, sys
+          v = sys.argv[1]
+          text = open('UpdateLog.md', encoding='utf-8').read()
+          pattern = re.compile(rf'^##\s+v{re.escape(v)}.*?(?=^##\s+|\Z)', re.M | re.S)
+          m = pattern.search(text)
+          open('release_notes.md', 'w', encoding='utf-8').write((m.group(0).strip() if m else f'v{v}') + '\n')
+          PY
+
+      - name: Create Release (sync release notes + attach EXE)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body_path: release_notes.md
+          files: dist/Easy-TodoList.exe
+          draft: false
+          prerelease: false

@@ -4,7 +4,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ============================================
-echo   MaterialTodo - Build Windows EXE
+echo   Easy-TodoList - Build Windows EXE
 echo ============================================
 echo.
 
@@ -44,7 +44,7 @@ if errorlevel 1 (
 )
 
 echo [3/4] Building EXE with PyInstaller...
-%PY% -m PyInstaller --noconfirm --clean --onefile --windowed --name MaterialTodo --icon app.ico main.py
+%PY% -m PyInstaller --noconfirm --clean --onefile --windowed --name Easy-TodoList --icon app.ico main.py
 if errorlevel 1 (
     echo [ERROR] PyInstaller build failed.
     pause
@@ -53,6 +53,6 @@ if errorlevel 1 (
 
 echo [4/4] Done!
 echo.
-echo Output: %cd%\dist\MaterialTodo.exe
+echo Output: %cd%\dist\Easy-TodoList.exe
 echo.
 pause

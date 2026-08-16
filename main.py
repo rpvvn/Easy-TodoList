@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-MaterialTodo —— 桌面悬浮待办小组件。
+Easy-TodoList —— 桌面悬浮待办小组件。
 
 界面结构（单窗口，上下两个圆角悬浮面板）：
-- 顶部信息栏：待办图标 + 红色数量角标 + 「N个待办事项」，右侧添加按钮、九宫格设置按钮；
-- 下方主内容面板：「全部待办」标题、单行待办列表（点击标记完成）、右下角对勾/扫帚悬浮按钮。
+- 顶部信息栏：应用 Logo + 「N个待办事项」计数，右侧彩色加号添加按钮、彩色齿轮设置按钮；
+- 下方主内容面板：「全部待办」标题、内嵌输入框、单行待办列表（点击标记完成）、
+  右下角对勾（全部完成）/ 叉号（清除已完成）悬浮按钮。
 
 保留能力：半透明磨砂圆角、系统托盘、开机自启、置顶、透明度/圆角调节、全局快捷键。
 """
@@ -70,12 +71,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-APP_ID = "MaterialTodo.App"
-APP_NAME = "MaterialTodo"
-APP_DISPLAY_NAME = "待办清单"
+APP_ID = "Easy-TodoList.App"
+APP_NAME = "Easy-TodoList"
+APP_DISPLAY_NAME = "Easy-TodoList"
 
-# 改成你自己的仓库地址即可（设置面板 / 托盘菜单 / 页脚按钮都会跳转到此地址）
-GITHUB_REPO_URL = "https://github.com/your-name/material-todo"
+# 项目仓库地址（设置面板 / 托盘菜单 / 页脚按钮都会跳转到此地址）
+GITHUB_REPO_URL = "https://github.com/rpvvn/Easy-TodoList"
+
+# 旧版本数据目录名（用于首次启动时迁移旧数据）
+OLD_APP_NAME = "MaterialTodo"
 
 AUTOSTART_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 WM_HOTKEY = 0x0312
@@ -189,7 +193,29 @@ class Config:
         self.settings_path = self.base_dir / "settings.json"
         self.settings = dict(DEFAULT_SETTINGS)
         self.todos: list[dict] = []
+        self._migrate_old_data(base)
         self.load()
+
+    def _migrate_old_data(self, base):
+        """从旧版本 MaterialTodo 数据目录迁移到 Easy-TodoList（仅首次）。"""
+        try:
+            if self.base_dir.exists():
+                return
+            if not base:
+                return
+            old_dir = Path(base) / OLD_APP_NAME
+            if not old_dir.exists():
+                return
+            self.base_dir.mkdir(parents=True, exist_ok=True)
+            for name in ("todos.json", "settings.json"):
+                src = old_dir / name
+                if src.exists():
+                    try:
+                        (self.base_dir / name).write_bytes(src.read_bytes())
+                    except OSError:
+                        pass
+        except OSError:
+            pass
 
     @property
     def colors(self) -> dict:
@@ -391,7 +417,7 @@ def set_autostart(enabled: bool) -> tuple[bool, str]:
         except OSError as exc:
             return False, str(exc)
 
-    desktop_file = Path.home() / ".config" / "autostart" / "material-todo.desktop"
+    desktop_file = Path.home() / ".config" / "autostart" / "easy-todolist.desktop"
     try:
         if enabled:
             desktop_file.parent.mkdir(parents=True, exist_ok=True)
@@ -421,7 +447,7 @@ def is_autostart_enabled() -> bool:
             return True
         except OSError:
             return False
-    return (Path.home() / ".config" / "autostart" / "material-todo.desktop").exists()
+    return (Path.home() / ".config" / "autostart" / "easy-todolist.desktop").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -755,21 +781,13 @@ def _draw_vector_icon(p: QPainter, kind: str, rect: QRectF, color: QColor) -> No
         path.addEllipse(QPointF(cx, cy), w * 0.085, w * 0.085)
         p.drawPath(path)
     elif kind == "pencil":
+        # 铅笔（类似 ✏️）
         p.setPen(pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawLine(pt(0.28, 0.72), pt(0.60, 0.40))
-        p.drawLine(pt(0.60, 0.40), pt(0.76, 0.24))
-        p.drawLine(pt(0.72, 0.28), pt(0.76, 0.24))
-        p.drawLine(pt(0.76, 0.24), pt(0.74, 0.15))
-    elif kind == "trash":
-        p.setPen(pen)
-        p.setBrush(Qt.BrushStyle.NoBrush)
-        p.drawLine(pt(0.30, 0.26), pt(0.70, 0.26))
-        p.drawLine(pt(0.41, 0.20), pt(0.59, 0.20))
-        body = QRectF(rect.x() + w * 0.34, rect.y() + h * 0.30, w * 0.32, h * 0.50)
-        p.drawRoundedRect(body, w * 0.05, w * 0.05)
-        p.drawLine(pt(0.43, 0.38), pt(0.43, 0.68))
-        p.drawLine(pt(0.57, 0.38), pt(0.57, 0.68))
+        p.drawLine(pt(0.30, 0.70), pt(0.58, 0.42))
+        p.drawLine(pt(0.58, 0.42), pt(0.74, 0.26))
+        p.drawLine(pt(0.68, 0.32), pt(0.74, 0.26))
+        p.drawLine(pt(0.26, 0.74), pt(0.36, 0.64))
 
 
 # ---------------------------------------------------------------------------
@@ -781,7 +799,8 @@ class IconButton(QAbstractButton):
 
     def __init__(self, icon: str, color_provider, checkable: bool = False,
                  tooltip: str = "", size: int = 30, active_icon: str | None = None,
-                 danger: bool = False, muted: bool = False, colored: bool = False):
+                 danger: bool = False, muted: bool = False, colored: bool = False,
+                 danger_always: bool = False):
         super().__init__()
         self._icon = icon
         self._active_icon = active_icon or icon
@@ -789,6 +808,7 @@ class IconButton(QAbstractButton):
         self._danger = danger
         self._muted = muted
         self._colored = colored
+        self._danger_always = danger_always
         self.setCheckable(checkable)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedSize(size, size)
@@ -824,7 +844,7 @@ class IconButton(QAbstractButton):
         if self.isChecked():
             bg = _parse_color(c["primary_soft"])
         elif self.underMouse() and self.isEnabled():
-            bg = _parse_color(c["danger_soft"] if self._danger else c["surface_hover"])
+            bg = _parse_color(c["danger_soft"] if (self._danger or self._danger_always) else c["surface_hover"])
         if bg is not None and bg.alpha() > 0:
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(bg))
@@ -832,6 +852,8 @@ class IconButton(QAbstractButton):
 
         if self._colored:
             fg = _parse_color(c["primary_hover"] if self.underMouse() else c["primary"])
+        elif self._danger_always:
+            fg = _parse_color(c["danger"])
         elif self._danger and self.underMouse() and not self.isChecked():
             fg = _parse_color(c["danger"])
         elif self.isChecked():
@@ -1327,7 +1349,7 @@ class TodoRow(QFrame):
         lay.addWidget(self.editor, 1)
 
         self.edit_btn = IconButton("pencil", color_provider, tooltip="编辑", size=24, muted=True)
-        self.delete_btn = IconButton("trash", color_provider, tooltip="删除", size=24, muted=True, danger=True)
+        self.delete_btn = IconButton("close", color_provider, tooltip="删除", size=24, danger_always=True)
         self.edit_btn.hide()
         self.delete_btn.hide()
         lay.addWidget(self.edit_btn, 0, Qt.AlignmentFlag.AlignVCenter)
