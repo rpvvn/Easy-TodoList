@@ -20,7 +20,7 @@ def main() -> int:
     tag = (sys.argv[1] if len(sys.argv) > 1 else "").strip().lstrip("v")
     out = (sys.argv[2] if len(sys.argv) > 2 else "release_notes.md").strip()
     if not tag:
-        print("[ERROR] 缺少版本参数，用法: extract_release_notes.py <tag>", file=sys.stderr)
+        print("[ERROR] missing version argument, usage: extract_release_notes.py <tag>", file=sys.stderr)
         return 1
 
     with open("UpdateLog.md", encoding="utf-8") as fh:
@@ -37,7 +37,7 @@ def main() -> int:
             break
 
     if start is None:
-        print(f"[WARN] UpdateLog.md 中未找到版本 v{tag}，回退为纯版本号", file=sys.stderr)
+        print(f"[WARN] version v{tag} not found in UpdateLog.md, fallback to plain version number", file=sys.stderr)
         content = f"v{tag}"
     else:
         content = text[start:end].strip()
@@ -50,7 +50,7 @@ def main() -> int:
 
     with open(out, "w", encoding="utf-8") as fh:
         fh.write(content + "\n")
-    print(f"[OK] 已写入 {out}（{len(content)} 字符）")
+    print(f"[OK] wrote {out} ({len(content)} chars)")
     return 0
 
 
