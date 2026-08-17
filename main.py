@@ -70,6 +70,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtNetwork import (
+    QLocalServer,
+    QLocalSocket,
+)
 
 APP_ID = "Easy-TodoList.App"
 APP_NAME = "Easy-TodoList"
@@ -82,6 +86,9 @@ GITHUB_REPO_URL = "https://github.com/rpvvn/Easy-TodoList"
 OLD_APP_NAME = "MaterialTodo"
 
 AUTOSTART_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+
+# 单实例检测使用的本地 socket 名称（Windows 下映射为命名管道，Linux 下为 socket 文件）
+SINGLE_INSTANCE_KEY = "Easy-TodoList.SingleInstance"
 WM_HOTKEY = 0x0312
 WM_SYSCOMMAND = 0x0112
 WM_MOVING = 0x0216
@@ -381,19 +388,69 @@ def _set_windows_app_id() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 单实例守护（重复运行检测）
+# ---------------------------------------------------------------------------
+
+class SingleInstanceServer(QObject):
+    """监听本地 socket：已有实例运行时，新实例把启动意图转发过来。"""
+
+    show_requested = Signal()
+
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
+        self._server = QLocalServer(self)
+        self._server.newConnection.connect(self._on_new_connection)
+
+    def listen(self) -> bool:
+        if self._server.isListening():
+            return True
+        # 清理可能残留的 socket（Linux 下崩溃后可能遗留文件）
+        QLocalServer.removeServer(SINGLE_INSTANCE_KEY)
+        return self._server.listen(SINGLE_INSTANCE_KEY)
+
+    def _on_new_connection(self):
+        conn = self._server.nextPendingConnection()
+        if conn is None:
+            return
+        conn.readyRead.connect(lambda c=conn: self._on_ready_read(c))
+        conn.disconnected.connect(conn.deleteLater)
+
+    def _on_ready_read(self, conn):
+        msg = bytes(conn.readAll()).decode("utf-8", "replace").strip().lower()
+        # 普通启动或显式 --show 时唤起主窗口；--hidden/--tray 则保持现状
+        if msg != "hide":
+            self.show_requested.emit()
+        conn.disconnectFromServer()
+
+
+def _notify_existing_instance(argv: list[str]) -> bool:
+    """若已有实例在运行，把本次启动意图转发过去并返回 True。"""
+    socket = QLocalSocket()
+    socket.connectToServer(SINGLE_INSTANCE_KEY)
+    if not socket.waitForConnected(250):
+        return False
+    force_hide = ("--hidden" in argv or "--tray" in argv) and "--show" not in argv
+    socket.write(b"hide" if force_hide else b"show")
+    socket.flush()
+    socket.waitForBytesWritten(250)
+    socket.disconnectFromServer()
+    return True
+
+
+# ---------------------------------------------------------------------------
 # 开机自启
 # ---------------------------------------------------------------------------
 
 def _autostart_command() -> str:
     exe = Path(sys.executable).resolve()
     if getattr(sys, "frozen", False):
-        return f'"{exe}" --hidden'
+        return f'"{exe}"'
     if sys.platform == "win32" and exe.name.lower() == "python.exe":
         pyw = exe.with_name("pythonw.exe")
         if pyw.exists():
             exe = pyw
     script = Path(__file__).resolve()
-    return f'"{exe}" "{script}" --hidden'
+    return f'"{exe}" "{script}"'
 
 
 def set_autostart(enabled: bool) -> tuple[bool, str]:
@@ -1913,7 +1970,7 @@ class MainWindow(QWidget):
 
         flags = (
             Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.Window
+            | Qt.WindowType.Tool
             | Qt.WindowType.WindowSystemMenuHint
         )
         self.setWindowFlags(flags)
@@ -2490,11 +2547,23 @@ def main() -> int:
     app.setStyle("Fusion")
     app.setQuitOnLastWindowClosed(False)
 
+    # 单实例检测：已有实例在运行时，把本次启动意图转发过去并退出本实例
+    if _notify_existing_instance(raw_argv):
+        return 0
+
+    guard = SingleInstanceServer()
+    if not guard.listen():
+        # 竞态下另一实例抢先监听：再通知一次并退出
+        _notify_existing_instance(raw_argv)
+        return 0
+
     cfg = Config()
     if cfg.settings.get("start_in_tray") and not force_show:
         start_hidden = True
 
     window = MainWindow(cfg)
+    guard.setParent(window)
+    guard.show_requested.connect(window.show_main_window)
     window._sync_tray()
     if _is_native_windows():
         window._register_hotkeys()
