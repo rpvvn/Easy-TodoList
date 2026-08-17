@@ -78,7 +78,7 @@ from PySide6.QtNetwork import (
 APP_ID = "Easy-TodoList.App"
 APP_NAME = "Easy-TodoList"
 APP_DISPLAY_NAME = "Easy-TodoList"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 # 项目仓库地址（设置面板 / 托盘菜单 / 页脚按钮都会跳转到此地址）
 GITHUB_REPO_URL = "https://github.com/rpvvn/Easy-TodoList"
@@ -196,7 +196,9 @@ class Config:
 
     def __init__(self):
         base = os.environ.get("APPDATA")
-        self.base_dir = Path(base) / APP_NAME if base else Path.home() / f".{APP_NAME.lower()}"
+        self.base_dir = (
+            Path(base) / APP_NAME if base else Path.home() / f".{APP_NAME.lower()}"
+        )
         self.todos_path = self.base_dir / "todos.json"
         self.settings_path = self.base_dir / "settings.json"
         self.settings = dict(DEFAULT_SETTINGS)
@@ -256,7 +258,9 @@ class Config:
             radius = DEFAULT_CORNER_RADIUS
         self.settings["corner_radius"] = max(8, min(40, radius))
 
-        self.settings["theme"] = "dark" if self.settings.get("theme") != "light" else "light"
+        self.settings["theme"] = (
+            "dark" if self.settings.get("theme") != "light" else "light"
+        )
         self.settings["topmost"] = bool(self.settings.get("topmost"))
         self.settings["start_in_tray"] = bool(self.settings.get("start_in_tray"))
         self.settings["close_to_tray"] = bool(self.settings.get("close_to_tray"))
@@ -264,8 +268,12 @@ class Config:
         self.settings["show_top_bar"] = bool(self.settings.get("show_top_bar", True))
         self.settings["lock_position"] = bool(self.settings.get("lock_position"))
         self.settings["lock_size"] = bool(self.settings.get("lock_size"))
-        self.settings["show_hotkey"] = str(self.settings.get("show_hotkey", "Ctrl+Alt+T"))
-        self.settings["new_todo_hotkey"] = str(self.settings.get("new_todo_hotkey", "Ctrl+Alt+N"))
+        self.settings["show_hotkey"] = str(
+            self.settings.get("show_hotkey", "Ctrl+Alt+T")
+        )
+        self.settings["new_todo_hotkey"] = str(
+            self.settings.get("new_todo_hotkey", "Ctrl+Alt+N")
+        )
 
         try:
             data = json.loads(self.todos_path.read_text(encoding="utf-8"))
@@ -293,7 +301,9 @@ class Config:
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(path.suffix + ".tmp")
-            tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            tmp.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             os.replace(tmp, path)
         except OSError:
             pass
@@ -332,7 +342,12 @@ def _make_rounded_region(rects: list[tuple[int, int, int, int, int]]):
     gdi32.CreateRoundRectRgn.restype = wintypes.HRGN
     gdi32.CreateRectRgn.argtypes = [ctypes.c_int] * 4
     gdi32.CreateRectRgn.restype = wintypes.HRGN
-    gdi32.CombineRgn.argtypes = [wintypes.HRGN, wintypes.HRGN, wintypes.HRGN, ctypes.c_int]
+    gdi32.CombineRgn.argtypes = [
+        wintypes.HRGN,
+        wintypes.HRGN,
+        wintypes.HRGN,
+        ctypes.c_int,
+    ]
     gdi32.CombineRgn.restype = ctypes.c_int
     gdi32.DeleteObject.argtypes = [wintypes.HGDIOBJ]
     gdi32.DeleteObject.restype = wintypes.BOOL
@@ -392,6 +407,7 @@ def _set_windows_app_id() -> None:
 # 单实例守护（重复运行检测）
 # ---------------------------------------------------------------------------
 
+
 class SingleInstanceServer(QObject):
     """监听本地 socket：已有实例运行时，新实例把启动意图转发过来。"""
 
@@ -442,6 +458,7 @@ def _notify_existing_instance(argv: list[str]) -> bool:
 # 开机自启
 # ---------------------------------------------------------------------------
 
+
 def _autostart_command() -> str:
     exe = Path(sys.executable).resolve()
     if getattr(sys, "frozen", False):
@@ -461,7 +478,10 @@ def set_autostart(enabled: bool) -> tuple[bool, str]:
             import winreg
 
             key = winreg.CreateKeyEx(
-                winreg.HKEY_CURRENT_USER, AUTOSTART_RUN_KEY, 0, winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE
+                winreg.HKEY_CURRENT_USER,
+                AUTOSTART_RUN_KEY,
+                0,
+                winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE,
             )
             with key:
                 if enabled:
@@ -499,7 +519,9 @@ def is_autostart_enabled() -> bool:
         try:
             import winreg
 
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, AUTOSTART_RUN_KEY, 0, winreg.KEY_QUERY_VALUE)
+            key = winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, AUTOSTART_RUN_KEY, 0, winreg.KEY_QUERY_VALUE
+            )
             with key:
                 winreg.QueryValueEx(key, APP_NAME)
             return True
@@ -523,20 +545,22 @@ _VK_TO_TEXT = {ord("A") + i: chr(ord("A") + i) for i in range(26)}
 _VK_TO_TEXT.update({ord("0") + i: str(i) for i in range(10)})
 for i in range(1, 13):
     _VK_TO_TEXT[0x70 + i - 1] = f"F{i}"  # VK_F1 = 0x70
-_VK_TO_TEXT.update({
-    0x20: "Space",
-    0x0D: "Enter",
-    0x09: "Tab",
-    0x2E: "Delete",
-    0x25: "Left",
-    0x26: "Up",
-    0x27: "Right",
-    0x28: "Down",
-    0x21: "PageUp",
-    0x22: "PageDown",
-    0x23: "End",
-    0x24: "Home",
-})
+_VK_TO_TEXT.update(
+    {
+        0x20: "Space",
+        0x0D: "Enter",
+        0x09: "Tab",
+        0x2E: "Delete",
+        0x25: "Left",
+        0x26: "Up",
+        0x27: "Right",
+        0x28: "Down",
+        0x21: "PageUp",
+        0x22: "PageDown",
+        0x23: "End",
+        0x24: "Home",
+    }
+)
 
 _TEXT_TO_VK: dict[str, int] = {}
 for _vk, _text in _VK_TO_TEXT.items():
@@ -594,7 +618,12 @@ def register_hotkey(hwnd: int, hotkey_id: int, text) -> bool:
         return False
     try:
         user32 = ctypes.windll.user32
-        user32.RegisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_uint, ctypes.c_uint]
+        user32.RegisterHotKey.argtypes = [
+            wintypes.HWND,
+            ctypes.c_int,
+            ctypes.c_uint,
+            ctypes.c_uint,
+        ]
         user32.RegisterHotKey.restype = wintypes.BOOL
         return bool(user32.RegisterHotKey(wintypes.HWND(hwnd), hotkey_id, mods, vk))
     except Exception:
@@ -642,6 +671,7 @@ def _qt_key_to_vk(e: QKeyEvent) -> int:
 # ---------------------------------------------------------------------------
 # 通用工具
 # ---------------------------------------------------------------------------
+
 
 def _parse_color(value) -> QColor:
     """把颜色配置转成 QColor，兼容 #RRGGBB / rgba(...) / QColor。"""
@@ -728,12 +758,19 @@ def _make_icon(colors: dict) -> QIcon:
 # 矢量图标
 # ---------------------------------------------------------------------------
 
+
 def _draw_vector_icon(p: QPainter, kind: str, rect: QRectF, color: QColor) -> None:
     """在 rect 内用矢量路径绘制图标（清晰、抗锯齿、随主题变色）。"""
     w = rect.width()
     h = rect.height()
     sw = max(1.3, w * 0.085)
-    pen = QPen(color, sw, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+    pen = QPen(
+        color,
+        sw,
+        Qt.PenStyle.SolidLine,
+        Qt.PenCapStyle.RoundCap,
+        Qt.PenJoinStyle.RoundJoin,
+    )
 
     def pt(fx: float, fy: float) -> QPointF:
         return QPointF(rect.x() + w * fx, rect.y() + h * fy)
@@ -758,8 +795,16 @@ def _draw_vector_icon(p: QPainter, kind: str, rect: QRectF, color: QColor) -> No
     elif kind == "plus_filled":
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QBrush(color))
-        p.drawRoundedRect(QRectF(rect.x() + w * 0.42, rect.y() + h * 0.20, w * 0.16, h * 0.60), w * 0.05, w * 0.05)
-        p.drawRoundedRect(QRectF(rect.x() + w * 0.20, rect.y() + h * 0.42, w * 0.60, h * 0.16), w * 0.05, w * 0.05)
+        p.drawRoundedRect(
+            QRectF(rect.x() + w * 0.42, rect.y() + h * 0.20, w * 0.16, h * 0.60),
+            w * 0.05,
+            w * 0.05,
+        )
+        p.drawRoundedRect(
+            QRectF(rect.x() + w * 0.20, rect.y() + h * 0.42, w * 0.60, h * 0.16),
+            w * 0.05,
+            w * 0.05,
+        )
     elif kind == "check":
         p.setPen(pen)
         p.setBrush(Qt.BrushStyle.NoBrush)
@@ -793,7 +838,11 @@ def _draw_vector_icon(p: QPainter, kind: str, rect: QRectF, color: QColor) -> No
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QBrush(color))
         path = QPainterPath()
-        path.addRoundedRect(QRectF(rect.x() + w * 0.36, rect.y() + h * 0.12, w * 0.28, h * 0.30), w * 0.07, w * 0.07)
+        path.addRoundedRect(
+            QRectF(rect.x() + w * 0.36, rect.y() + h * 0.12, w * 0.28, h * 0.30),
+            w * 0.07,
+            w * 0.07,
+        )
         path.moveTo(rect.x() + w * 0.41, rect.y() + h * 0.42)
         path.lineTo(rect.x() + w * 0.59, rect.y() + h * 0.42)
         path.lineTo(cx, rect.y() + h * 0.90)
@@ -835,7 +884,11 @@ def _draw_vector_icon(p: QPainter, kind: str, rect: QRectF, color: QColor) -> No
         r_tooth = w * 0.075
         for i in range(8):
             a = math.radians(i * 45 + 22.5)
-            path.addEllipse(QPointF(cx + math.cos(a) * r_mid, cy + math.sin(a) * r_mid), r_tooth, r_tooth)
+            path.addEllipse(
+                QPointF(cx + math.cos(a) * r_mid, cy + math.sin(a) * r_mid),
+                r_tooth,
+                r_tooth,
+            )
         path.addEllipse(QPointF(cx, cy), w * 0.085, w * 0.085)
         p.drawPath(path)
     elif kind == "pencil":
@@ -852,13 +905,23 @@ def _draw_vector_icon(p: QPainter, kind: str, rect: QRectF, color: QColor) -> No
 # 基础自定义控件
 # ---------------------------------------------------------------------------
 
+
 class IconButton(QAbstractButton):
     """图标按钮：用 QPainter 绘制矢量图标，避免 emoji/文本字形发虚或渲染不一致。"""
 
-    def __init__(self, icon: str, color_provider, checkable: bool = False,
-                 tooltip: str = "", size: int = 30, active_icon: str | None = None,
-                 danger: bool = False, muted: bool = False, colored: bool = False,
-                 danger_always: bool = False):
+    def __init__(
+        self,
+        icon: str,
+        color_provider,
+        checkable: bool = False,
+        tooltip: str = "",
+        size: int = 30,
+        active_icon: str | None = None,
+        danger: bool = False,
+        muted: bool = False,
+        colored: bool = False,
+        danger_always: bool = False,
+    ):
         super().__init__()
         self._icon = icon
         self._active_icon = active_icon or icon
@@ -902,7 +965,11 @@ class IconButton(QAbstractButton):
         if self.isChecked():
             bg = _parse_color(c["primary_soft"])
         elif self.underMouse() and self.isEnabled():
-            bg = _parse_color(c["danger_soft"] if (self._danger or self._danger_always) else c["surface_hover"])
+            bg = _parse_color(
+                c["danger_soft"]
+                if (self._danger or self._danger_always)
+                else c["surface_hover"]
+            )
         if bg is not None and bg.alpha() > 0:
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(bg))
@@ -930,8 +997,15 @@ class IconButton(QAbstractButton):
 class FAB(QAbstractButton):
     """右下角圆形悬浮按钮：图标内嵌于半透明圆形底色中。"""
 
-    def __init__(self, icon: str, color_provider, tooltip: str = "", size: int = 46,
-                 tone: str = "neutral", danger_hover: bool = False):
+    def __init__(
+        self,
+        icon: str,
+        color_provider,
+        tooltip: str = "",
+        size: int = 46,
+        tone: str = "neutral",
+        danger_hover: bool = False,
+    ):
         super().__init__()
         self._icon = icon
         self._provider = color_provider
@@ -974,7 +1048,9 @@ class FAB(QAbstractButton):
 class MaterialSwitch(QAbstractButton):
     """Material 风格开关。"""
 
-    def __init__(self, color_provider, checked: bool = False, parent: QWidget | None = None):
+    def __init__(
+        self, color_provider, checked: bool = False, parent: QWidget | None = None
+    ):
         super().__init__(parent)
         self._provider = color_provider
         self._offset = 1.0 if checked else 0.0
@@ -1057,8 +1133,13 @@ class CheckButton(QAbstractButton):
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(QColor(c["primary"])))
             p.drawEllipse(rect)
-            pen = QPen(QColor(c["on_primary"]), 2.0, Qt.PenStyle.SolidLine,
-                       Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+            pen = QPen(
+                QColor(c["on_primary"]),
+                2.0,
+                Qt.PenStyle.SolidLine,
+                Qt.PenCapStyle.RoundCap,
+                Qt.PenJoinStyle.RoundJoin,
+            )
             p.setPen(pen)
             p.setBrush(Qt.BrushStyle.NoBrush)
             path = QPainterPath()
@@ -1067,7 +1148,9 @@ class CheckButton(QAbstractButton):
             path.lineTo(16.8, 10.2)
             p.drawPath(path)
         else:
-            color = QColor(c["primary"]) if self.underMouse() else QColor(c["track_off"])
+            color = (
+                QColor(c["primary"]) if self.underMouse() else QColor(c["track_off"])
+            )
             p.setBrush(Qt.BrushStyle.NoBrush)
             p.setPen(QPen(color, 2.0))
             p.drawEllipse(rect.adjusted(0.5, 0.5, -0.5, -0.5))
@@ -1091,7 +1174,11 @@ class ElideLabel(QLabel):
 
     def _update_elide(self):
         fm = self.fontMetrics()
-        super().setText(fm.elidedText(self._full, Qt.TextElideMode.ElideRight, max(20, self.width())))
+        super().setText(
+            fm.elidedText(
+                self._full, Qt.TextElideMode.ElideRight, max(20, self.width())
+            )
+        )
 
 
 class HotkeyEdit(QAbstractButton):
@@ -1172,7 +1259,11 @@ class HotkeyEdit(QAbstractButton):
         font = self.font()
         font.setPointSize(9)
         p.setFont(font)
-        p.drawText(rect.adjusted(10, 0, -10, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, text)
+        p.drawText(
+            rect.adjusted(10, 0, -10, 0),
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+            text,
+        )
         p.end()
 
 
@@ -1187,7 +1278,10 @@ class DragController(QObject):
 
     def eventFilter(self, obj, event):
         t = event.type()
-        if t == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+        if (
+            t == QEvent.Type.MouseButtonPress
+            and event.button() == Qt.MouseButton.LeftButton
+        ):
             if not self._win.drag_locked():
                 self._start_global = event.globalPosition().toPoint()
                 self._window_start = self._win.pos()
@@ -1222,7 +1316,12 @@ class ResizeGrip(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         c = self._win.cfg.colors
-        pen = QPen(_parse_color(c["subtext"]), 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+        pen = QPen(
+            _parse_color(c["subtext"]),
+            1.6,
+            Qt.PenStyle.SolidLine,
+            Qt.PenCapStyle.RoundCap,
+        )
         p.setPen(pen)
         p.drawLine(11, 3, 3, 11)
         p.drawLine(13, 3, 3, 13)
@@ -1244,8 +1343,14 @@ class ResizeGrip(QWidget):
         if not (event.buttons() & Qt.MouseButton.LeftButton):
             return
         delta = event.globalPosition().toPoint() - self._start_global
-        new_w = max(self._win.minimumWidth(), min(self._win.maximumWidth(), self._start_size.width() + delta.x()))
-        new_h = max(self._win.minimumHeight(), min(self._win.maximumHeight(), self._start_size.height() + delta.y()))
+        new_w = max(
+            self._win.minimumWidth(),
+            min(self._win.maximumWidth(), self._start_size.width() + delta.x()),
+        )
+        new_h = max(
+            self._win.minimumHeight(),
+            min(self._win.maximumHeight(), self._start_size.height() + delta.y()),
+        )
         self._win.resize(new_w, new_h)
         event.accept()
 
@@ -1295,7 +1400,9 @@ class RoundedPanel(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self._drag_start is not None and (event.buttons() & Qt.MouseButton.LeftButton):
+        if self._drag_start is not None and (
+            event.buttons() & Qt.MouseButton.LeftButton
+        ):
             delta = event.globalPosition().toPoint() - self._drag_start
             self._win.move(self._window_start + delta)
             event.accept()
@@ -1311,6 +1418,7 @@ class RoundedPanel(QWidget):
 # ---------------------------------------------------------------------------
 # 顶部信息栏
 # ---------------------------------------------------------------------------
+
 
 class CountBadge(QWidget):
     """待办清单图标（不再显示红色数量角标）。"""
@@ -1350,13 +1458,24 @@ class TopBar(RoundedPanel):
 
         self._count_label = QLabel("0个待办事项")
         self._count_label.setObjectName("topbarCount")
-        self._count_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._count_label.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
         lay.addWidget(self._count_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
         lay.addStretch(1)
 
-        self.add_btn = IconButton("plus_filled", color_provider, tooltip="新建待办", size=34, colored=True)
-        self.settings_btn = IconButton("gear_filled", color_provider, checkable=True, tooltip="设置", size=34, colored=True)
+        self.add_btn = IconButton(
+            "plus_filled", color_provider, tooltip="新建待办", size=34, colored=True
+        )
+        self.settings_btn = IconButton(
+            "gear_filled",
+            color_provider,
+            checkable=True,
+            tooltip="设置",
+            size=34,
+            colored=True,
+        )
         lay.addWidget(self.add_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         lay.addWidget(self.settings_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -1374,6 +1493,7 @@ class TopBar(RoundedPanel):
 # ---------------------------------------------------------------------------
 # 待办行
 # ---------------------------------------------------------------------------
+
 
 class TodoRow(QFrame):
     toggled = Signal(str, bool)
@@ -1406,16 +1526,24 @@ class TodoRow(QFrame):
         self.editor.hide()
         lay.addWidget(self.editor, 1)
 
-        self.edit_btn = IconButton("pencil", color_provider, tooltip="编辑", size=24, muted=True)
-        self.delete_btn = IconButton("close", color_provider, tooltip="删除", size=24, danger_always=True)
+        self.edit_btn = IconButton(
+            "pencil", color_provider, tooltip="编辑", size=24, muted=True
+        )
+        self.delete_btn = IconButton(
+            "close", color_provider, tooltip="删除", size=24, danger_always=True
+        )
         self.edit_btn.hide()
         self.delete_btn.hide()
         lay.addWidget(self.edit_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         lay.addWidget(self.delete_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        self.check.toggled.connect(lambda checked: self.toggled.emit(self.todo.get("id", ""), checked))
+        self.check.toggled.connect(
+            lambda checked: self.toggled.emit(self.todo.get("id", ""), checked)
+        )
         self.edit_btn.clicked.connect(self._begin_edit)
-        self.delete_btn.clicked.connect(lambda: self.delete_requested.emit(self.todo.get("id", "")))
+        self.delete_btn.clicked.connect(
+            lambda: self.delete_requested.emit(self.todo.get("id", ""))
+        )
         self.editor.returnPressed.connect(self._commit_edit)
         self.editor.editingFinished.connect(self._commit_edit)
 
@@ -1485,6 +1613,7 @@ class TodoRow(QFrame):
 # 主内容面板
 # ---------------------------------------------------------------------------
 
+
 class MainPanel(RoundedPanel):
     def __init__(self, window: QWidget, color_provider):
         super().__init__(window, 0.0)
@@ -1498,8 +1627,17 @@ class MainPanel(RoundedPanel):
         title_row.setSpacing(6)
         self.title_label = QLabel("全部待办")
         self.title_label.setObjectName("mainTitle")
-        self.title_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        self.settings_btn = IconButton("gear_filled", color_provider, checkable=True, tooltip="设置", size=28, colored=True)
+        self.title_label.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
+        self.settings_btn = IconButton(
+            "gear_filled",
+            color_provider,
+            checkable=True,
+            tooltip="设置",
+            size=28,
+            colored=True,
+        )
         title_row.addWidget(self.title_label)
         title_row.addStretch(1)
         title_row.addWidget(self.settings_btn)
@@ -1534,13 +1672,19 @@ class MainPanel(RoundedPanel):
         footer = QHBoxLayout()
         footer.setSpacing(10)
         footer.addStretch(1)
-        self.check_all_btn = FAB("check", color_provider, tooltip="全部标记完成", size=44, tone="primary")
-        self.clear_completed_btn = FAB("close", color_provider, tooltip="清除已完成", size=44, tone="primary")
+        self.check_all_btn = FAB(
+            "check", color_provider, tooltip="全部标记完成", size=44, tone="primary"
+        )
+        self.clear_completed_btn = FAB(
+            "close", color_provider, tooltip="清除已完成", size=44, tone="primary"
+        )
         self._grip = ResizeGrip(window)
         footer.addWidget(self.check_all_btn, 0, Qt.AlignmentFlag.AlignBottom)
         footer.addWidget(self.clear_completed_btn, 0, Qt.AlignmentFlag.AlignBottom)
         footer.addSpacing(2)
-        footer.addWidget(self._grip, 0, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+        footer.addWidget(
+            self._grip, 0, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight
+        )
         lay.addLayout(footer)
 
         self.check_all_btn.clicked.connect(window.mark_all_done)
@@ -1566,6 +1710,7 @@ class MainPanel(RoundedPanel):
 # 设置面板
 # ---------------------------------------------------------------------------
 
+
 class SettingsPanel(RoundedPanel):
     def __init__(self, window: QWidget):
         super().__init__(window, 0.0)
@@ -1577,7 +1722,9 @@ class SettingsPanel(RoundedPanel):
 
         head = QHBoxLayout()
         head.setSpacing(6)
-        self._back_btn = IconButton("close", lambda: window.cfg.colors, tooltip="返回待办", size=28)
+        self._back_btn = IconButton(
+            "close", lambda: window.cfg.colors, tooltip="返回待办", size=28
+        )
         title = QLabel("设置")
         title.setObjectName("sectionLabel")
         head.addWidget(self._back_btn)
@@ -1604,14 +1751,30 @@ class SettingsPanel(RoundedPanel):
         grid.setVerticalSpacing(7)
         grid.setColumnStretch(1, 1)
 
-        self._theme_switch = self._make_switch(self._on_theme_changed, window.cfg.settings.get("theme") == "dark")
-        self._topmost_switch = self._make_switch(self._on_topmost_changed, window.cfg.settings.get("topmost"))
-        self._topbar_switch = self._make_switch(self._on_topbar_changed, window.cfg.settings.get("show_top_bar"))
-        self._lock_position_switch = self._make_switch(self._on_lock_position_changed, window.cfg.settings.get("lock_position"))
-        self._lock_size_switch = self._make_switch(self._on_lock_size_changed, window.cfg.settings.get("lock_size"))
-        self._autostart_switch = self._make_switch(self._on_autostart_changed, window.cfg.settings.get("autostart"))
-        self._tray_switch = self._make_switch(self._on_start_tray_changed, window.cfg.settings.get("start_in_tray"))
-        self._close_tray_switch = self._make_switch(self._on_close_tray_changed, window.cfg.settings.get("close_to_tray"))
+        self._theme_switch = self._make_switch(
+            self._on_theme_changed, window.cfg.settings.get("theme") == "dark"
+        )
+        self._topmost_switch = self._make_switch(
+            self._on_topmost_changed, window.cfg.settings.get("topmost")
+        )
+        self._topbar_switch = self._make_switch(
+            self._on_topbar_changed, window.cfg.settings.get("show_top_bar")
+        )
+        self._lock_position_switch = self._make_switch(
+            self._on_lock_position_changed, window.cfg.settings.get("lock_position")
+        )
+        self._lock_size_switch = self._make_switch(
+            self._on_lock_size_changed, window.cfg.settings.get("lock_size")
+        )
+        self._autostart_switch = self._make_switch(
+            self._on_autostart_changed, window.cfg.settings.get("autostart")
+        )
+        self._tray_switch = self._make_switch(
+            self._on_start_tray_changed, window.cfg.settings.get("start_in_tray")
+        )
+        self._close_tray_switch = self._make_switch(
+            self._on_close_tray_changed, window.cfg.settings.get("close_to_tray")
+        )
 
         rows = [
             ("深色模式", self._theme_switch),
@@ -1626,8 +1789,18 @@ class SettingsPanel(RoundedPanel):
         for row, (text, switch) in enumerate(rows):
             label = QLabel(text)
             label.setObjectName("settingLabel")
-            grid.addWidget(label, row, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-            grid.addWidget(switch, row, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            grid.addWidget(
+                label,
+                row,
+                0,
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            )
+            grid.addWidget(
+                switch,
+                row,
+                1,
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            )
         v.addLayout(grid)
 
         opacity_row = QHBoxLayout()
@@ -1673,7 +1846,9 @@ class SettingsPanel(RoundedPanel):
         show_hk_row = QHBoxLayout()
         show_hk_label = QLabel("唤起组件")
         show_hk_label.setObjectName("settingLabel")
-        self._show_hotkey_edit = HotkeyEdit(lambda: window.cfg.colors, window.cfg.settings.get("show_hotkey"), self)
+        self._show_hotkey_edit = HotkeyEdit(
+            lambda: window.cfg.colors, window.cfg.settings.get("show_hotkey"), self
+        )
         self._show_hotkey_edit.hotkey_changed.connect(self._on_show_hotkey_changed)
         show_hk_row.addWidget(show_hk_label)
         show_hk_row.addStretch(1)
@@ -1683,7 +1858,9 @@ class SettingsPanel(RoundedPanel):
         new_hk_row = QHBoxLayout()
         new_hk_label = QLabel("新建待办")
         new_hk_label.setObjectName("settingLabel")
-        self._new_hotkey_edit = HotkeyEdit(lambda: window.cfg.colors, window.cfg.settings.get("new_todo_hotkey"), self)
+        self._new_hotkey_edit = HotkeyEdit(
+            lambda: window.cfg.colors, window.cfg.settings.get("new_todo_hotkey"), self
+        )
         self._new_hotkey_edit.hotkey_changed.connect(self._on_new_hotkey_changed)
         new_hk_row.addWidget(new_hk_label)
         new_hk_row.addStretch(1)
@@ -1704,7 +1881,9 @@ class SettingsPanel(RoundedPanel):
         self._back_btn.clicked.connect(lambda: self._win.set_settings_open(False))
 
     def _make_switch(self, handler, default: bool) -> MaterialSwitch:
-        switch = MaterialSwitch(lambda: self._win.cfg.colors, checked=default, parent=self)
+        switch = MaterialSwitch(
+            lambda: self._win.cfg.colors, checked=default, parent=self
+        )
         switch.toggled.connect(handler)
         return switch
 
@@ -1784,6 +1963,7 @@ class SettingsPanel(RoundedPanel):
 # ---------------------------------------------------------------------------
 # QSS
 # ---------------------------------------------------------------------------
+
 
 def build_qss(c: dict) -> str:
     return f"""
@@ -1961,6 +2141,7 @@ def build_qss(c: dict) -> str:
 # 主窗口
 # ---------------------------------------------------------------------------
 
+
 class MainWindow(QWidget):
     def __init__(self, cfg: Config):
         super().__init__()
@@ -1997,7 +2178,9 @@ class MainWindow(QWidget):
         if isinstance(geometry, list) and len(geometry) == 4:
             try:
                 w = max(self.minimumWidth(), min(self.maximumWidth(), int(geometry[2])))
-                h = max(self.minimumHeight(), min(self.maximumHeight(), int(geometry[3])))
+                h = max(
+                    self.minimumHeight(), min(self.maximumHeight(), int(geometry[3]))
+                )
                 self.setGeometry(int(geometry[0]), int(geometry[1]), w, h)
             except (TypeError, ValueError):
                 self.resize(400, 620)
@@ -2021,7 +2204,12 @@ class MainWindow(QWidget):
     # ------------------------------------------------------------------ UI
     def _build_ui(self):
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(WINDOW_OUTER_MARGIN, WINDOW_OUTER_MARGIN, WINDOW_OUTER_MARGIN, WINDOW_OUTER_MARGIN)
+        outer.setContentsMargins(
+            WINDOW_OUTER_MARGIN,
+            WINDOW_OUTER_MARGIN,
+            WINDOW_OUTER_MARGIN,
+            WINDOW_OUTER_MARGIN,
+        )
         outer.setSpacing(14)
 
         provider = lambda: self.cfg.colors
@@ -2032,8 +2220,8 @@ class MainWindow(QWidget):
         self._main_panel = MainPanel(self, provider)
         self._settings = SettingsPanel(self)
         self._stack = QStackedWidget(self)
-        self._stack.addWidget(self._main_panel)   # 页面 0：待办视图
-        self._stack.addWidget(self._settings)     # 页面 1：设置视图
+        self._stack.addWidget(self._main_panel)  # 页面 0：待办视图
+        self._stack.addWidget(self._settings)  # 页面 1：设置视图
         outer.addWidget(self._stack, 1)
 
         self._update_top_bar_visibility()
@@ -2197,7 +2385,10 @@ class MainWindow(QWidget):
         pending = [t for t in self.cfg.todos if not t.get("done")]
         completed = [t for t in self.cfg.todos if t.get("done")]
         pending.sort(key=lambda t: t.get("created_at", ""), reverse=True)
-        completed.sort(key=lambda t: t.get("completed_at", "") or t.get("created_at", ""), reverse=True)
+        completed.sort(
+            key=lambda t: t.get("completed_at", "") or t.get("created_at", ""),
+            reverse=True,
+        )
         return pending + completed
 
     def _rebuild_todos(self):
@@ -2400,7 +2591,9 @@ class MainWindow(QWidget):
         hwnd = int(self.winId())
         self._unregister_hotkeys()
         register_hotkey(hwnd, HOTKEY_ID_SHOW, self.cfg.settings.get("show_hotkey"))
-        register_hotkey(hwnd, HOTKEY_ID_NEW_TODO, self.cfg.settings.get("new_todo_hotkey"))
+        register_hotkey(
+            hwnd, HOTKEY_ID_NEW_TODO, self.cfg.settings.get("new_todo_hotkey")
+        )
 
     def _unregister_hotkeys(self):
         if not _is_native_windows():
@@ -2418,7 +2611,9 @@ class MainWindow(QWidget):
         if isinstance(geometry, list) and len(geometry) == 4:
             try:
                 w = max(self.minimumWidth(), min(self.maximumWidth(), int(geometry[2])))
-                h = max(self.minimumHeight(), min(self.maximumHeight(), int(geometry[3])))
+                h = max(
+                    self.minimumHeight(), min(self.maximumHeight(), int(geometry[3]))
+                )
                 self.setGeometry(int(geometry[0]), int(geometry[1]), w, h)
             except (TypeError, ValueError):
                 pass
@@ -2439,7 +2634,12 @@ class MainWindow(QWidget):
             self.move(x, y)
 
     def _save_geometry(self):
-        self.cfg.settings["geometry"] = [self.x(), self.y(), self.width(), self.height()]
+        self.cfg.settings["geometry"] = [
+            self.x(),
+            self.y(),
+            self.width(),
+            self.height(),
+        ]
         self.cfg.save_settings()
 
     def _build_panel_region(self):
@@ -2460,7 +2660,9 @@ class MainWindow(QWidget):
             h = round(panel.height() * dpr)
             if w <= 0 or h <= 0:
                 continue
-            rects.append((round(pos.x() * dpr), round(pos.y() * dpr), w, h, round(r * dpr)))
+            rects.append(
+                (round(pos.x() * dpr), round(pos.y() * dpr), w, h, round(r * dpr))
+            )
         return _make_rounded_region(rects)
 
     def _apply_win_effects(self):
@@ -2539,6 +2741,7 @@ class MainWindow(QWidget):
 # ---------------------------------------------------------------------------
 # 入口
 # ---------------------------------------------------------------------------
+
 
 def main() -> int:
     _set_windows_app_id()
