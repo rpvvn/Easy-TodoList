@@ -33,7 +33,6 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          python -c "exec(open('main.py', encoding='utf-8').read().split('GITHUB_REPO_URL')[0]); print(APP_VERSION)" | ForEach-Object { $env:APP_VERSION = $_.Trim() }
           $version = python -c "exec(open('main.py', encoding='utf-8').read().split('GITHUB_REPO_URL')[0]); print(APP_VERSION)"
           Write-Host "Version: $version"
           python -m PyInstaller --noconfirm --clean --onefile --windowed --name "Easy-TodoList-$version" --icon app.ico main.py
@@ -45,38 +44,10 @@ jobs:
           path: dist/Easy-TodoList-*.exe
           if-no-files-found: error
 
-      # 仅在打 tag（v*）时：把 UpdateLog.md 中当前版本的说明同步到 Release Notes，并附带 exe
+      # 仅在打 tag（v*）时：从 UpdateLog.md 提取「当前版本标题 → 下一个版本标题」之间的全部内容作为 Release Notes，并附带 exe
       - name: Extract release notes from UpdateLog.md
         if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          python - "$VERSION" <<'PY'
-          import re, sys
-          v = sys.argv[1]
-          text = open('UpdateLog.md', encoding='utf-8').read()
-
-          # 找到所有 ## vX.Y.Z 标题的位置
-          headings = list(re.finditer(r'^##\s+v[\d.]+', text, re.M))
-          start = None
-          end = None
-          for i, m in enumerate(headings):
-              ver = m.group().strip().lstrip('#').strip().lstrip('v')
-              if ver == v:
-                  start = m.start()
-                  if i + 1 < len(headings):
-                      end = headings[i + 1].start()
-                  else:
-                      end = len(text)
-                  break
-
-          if start is not None:
-              content = text[start:end].strip()
-          else:
-              content = f'v{v}'
-
-          open('release_notes.md', 'w', encoding='utf-8').write(content + '\n')
-          PY
+        run: python .github/scripts/extract_release_notes.py "${{ github.ref_name }}"
 
       - name: Create Release (sync release notes + attach EXE)
         if: startsWith(github.ref, 'refs/tags/v')
