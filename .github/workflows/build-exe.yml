@@ -33,13 +33,16 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --name Easy-TodoList --icon app.ico main.py
+          python -c "exec(open('main.py', encoding='utf-8').read().split('GITHUB_REPO_URL')[0]); print(APP_VERSION)" | ForEach-Object { $env:APP_VERSION = $_.Trim() }
+          $version = python -c "exec(open('main.py', encoding='utf-8').read().split('GITHUB_REPO_URL')[0]); print(APP_VERSION)"
+          Write-Host "Version: $version"
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name "Easy-TodoList-$version" --icon app.ico main.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Easy-TodoList-windows
-          path: dist/Easy-TodoList.exe
+          path: dist/Easy-TodoList-*.exe
           if-no-files-found: error
 
       # 仅在打 tag（v*）时：把 UpdateLog.md 中当前版本的说明同步到 Release Notes，并附带 exe
@@ -63,6 +66,6 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           body_path: release_notes.md
-          files: dist/Easy-TodoList.exe
+          files: dist/Easy-TodoList-*.exe
           draft: false
           prerelease: false

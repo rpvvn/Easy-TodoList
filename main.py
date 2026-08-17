@@ -78,6 +78,7 @@ from PySide6.QtNetwork import (
 APP_ID = "Easy-TodoList.App"
 APP_NAME = "Easy-TodoList"
 APP_DISPLAY_NAME = "Easy-TodoList"
+APP_VERSION = "1.1.0"
 
 # 项目仓库地址（设置面板 / 托盘菜单 / 页脚按钮都会跳转到此地址）
 GITHUB_REPO_URL = "https://github.com/rpvvn/Easy-TodoList"
@@ -1695,6 +1696,11 @@ class SettingsPanel(RoundedPanel):
         self._github_btn.clicked.connect(self._open_github)
         v.addWidget(self._github_btn)
 
+        self._version_label = QLabel(f"版本 v{APP_VERSION}")
+        self._version_label.setObjectName("versionLabel")
+        self._version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        v.addWidget(self._version_label)
+
         self._back_btn.clicked.connect(lambda: self._win.set_settings_open(False))
 
     def _make_switch(self, handler, default: bool) -> MaterialSwitch:
@@ -1891,6 +1897,11 @@ def build_qss(c: dict) -> str:
     QPushButton#githubButton:hover {{
         background-color: {c['primary']};
         color: {c['on_primary']};
+    }}
+    QLabel#versionLabel {{
+        color: {c['subtext']};
+        font-size: 10px;
+        padding: 2px 0;
     }}
     QSlider::groove:horizontal {{
         height: 4px;

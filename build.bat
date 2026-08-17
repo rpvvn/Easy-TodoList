@@ -25,7 +25,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [1/4] Installing dependencies...
+echo [1/5] Installing dependencies...
 %PY% -m pip install --upgrade pip
 %PY% -m pip install -r requirements.txt
 if errorlevel 1 (
@@ -34,7 +34,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [2/4] Generating app icon...
+echo [2/5] Generating app icon...
 if exist app.ico del /f /q app.ico
 %PY% make_icon.py
 if errorlevel 1 (
@@ -43,16 +43,21 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [3/4] Building EXE with PyInstaller...
-%PY% -m PyInstaller --noconfirm --clean --onefile --windowed --name Easy-TodoList --icon app.ico main.py
+echo [3/5] Reading version from main.py...
+%PY% -c "exec(open('main.py', encoding='utf-8').read().split('GITHUB_REPO_URL')[0]); print(APP_VERSION)" > %TEMP%\app_version.txt
+set /p APP_VERSION=<%TEMP%\app_version.txt
+echo Version: %APP_VERSION%
+
+echo [4/5] Building EXE with PyInstaller...
+%PY% -m PyInstaller --noconfirm --clean --onefile --windowed --name Easy-TodoList-%APP_VERSION% --icon app.ico main.py
 if errorlevel 1 (
     echo [ERROR] PyInstaller build failed.
     pause
     exit /b 1
 )
 
-echo [4/4] Done!
+echo [5/5] Done!
 echo.
-echo Output: %cd%\dist\Easy-TodoList.exe
+echo Output: %cd%\dist\Easy-TodoList-%APP_VERSION%.exe
 echo.
 pause
