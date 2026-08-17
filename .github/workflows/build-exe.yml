@@ -55,9 +55,27 @@ jobs:
           import re, sys
           v = sys.argv[1]
           text = open('UpdateLog.md', encoding='utf-8').read()
-          pattern = re.compile(rf'^##\s+v{re.escape(v)}.*?(?=^##\s+|\Z)', re.M | re.S)
-          m = pattern.search(text)
-          open('release_notes.md', 'w', encoding='utf-8').write((m.group(0).strip() if m else f'v{v}') + '\n')
+
+          # 找到所有 ## vX.Y.Z 标题的位置
+          headings = list(re.finditer(r'^##\s+v[\d.]+', text, re.M))
+          start = None
+          end = None
+          for i, m in enumerate(headings):
+              ver = m.group().strip().lstrip('#').strip().lstrip('v')
+              if ver == v:
+                  start = m.start()
+                  if i + 1 < len(headings):
+                      end = headings[i + 1].start()
+                  else:
+                      end = len(text)
+                  break
+
+          if start is not None:
+              content = text[start:end].strip()
+          else:
+              content = f'v{v}'
+
+          open('release_notes.md', 'w', encoding='utf-8').write(content + '\n')
           PY
 
       - name: Create Release (sync release notes + attach EXE)
@@ -65,6 +83,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          name: Easy-TodoList ${{ github.ref_name }}
           body_path: release_notes.md
           files: dist/Easy-TodoList-*.exe
           draft: false
