@@ -4,6 +4,13 @@
 
 ---
 
+## v1.4.0 (2026-08-17)
+
+### 优化 Improvements
+
+- 优化发布release notes 读取识别逻辑
+
+
 ## v1.3.0 (2026-08-17)
 
 ### 优化 Improvements
