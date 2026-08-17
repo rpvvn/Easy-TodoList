@@ -1,10 +1,20 @@
+<div align="center">
+
+<img src="docs/ui.png" alt="A lightweight Windows desktop floating to-do widget" width="45%">
+<img src="docs/ui2.png" alt="A lightweight Windows desktop floating to-do widget" width="45%">
+<br>
+
+
+
 # Easy-TodoList
 
 轻量级 Windows 桌面悬浮待办小组件：常驻桌面、半透明磨砂（毛玻璃）、圆角卡片，专注于「记录 / 完成 / 清除」三件事，极简、低占用。
 
-> 仓库地址：<https://github.com/rpvvn/Easy-TodoList>
 
+#### 🌐 [English](README_EN.md) · **简体中文**
 ---
+
+</div>
 
 ## 产品定位
 

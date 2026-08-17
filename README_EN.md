@@ -2,8 +2,8 @@
 
 A lightweight Windows desktop floating to-do widget: always-on-desktop, translucent frosted glass, rounded cards, focused on just three things — **record / complete / clear**. Minimal and low-footprint.
 
-> Repository: <https://github.com/rpvvn/Easy-TodoList>
 
+> 🌐 Language: [简体中文](README.md) · **English**
 ---
 
 ## Positioning
