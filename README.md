@@ -124,3 +124,9 @@ UpdateLog.md         更新日志（自动同步到 Release Notes）
 - **关闭按钮找不到了？** 关闭按钮会把应用最小化到系统托盘；右键托盘图标可选择「退出」。
 - **开机自启失败？** 程序会写注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，安全软件可能拦截。
 - **SmartScreen 提示？** 本工具为 PyInstaller 打包的未签名程序，首次运行选择「仍要运行」即可。
+
+
+<div align="center">
+
+##### 社区推广 [Linux.do](https://linux.do)
+</div>

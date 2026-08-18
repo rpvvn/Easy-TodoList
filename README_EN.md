@@ -114,3 +114,8 @@ UpdateLog.md         changelog (auto-synced to Release Notes)
 - **Can't find the close button?** Close minimizes to the system tray; right-click the tray icon to quit.
 - **Autostart fails?** The app writes `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; security software may block it.
 - **SmartScreen warning?** This is an unsigned PyInstaller build; choose "Run anyway" on first launch.
+
+<div align="center">
+
+##### Community Promotion [Linux.do](https://linux.do)
+</div>
